@@ -25,4 +25,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional: use Coinranking instead of CoinGecko for coins rank 200–2000
+          COIN_SOURCE: ${{ vars.COIN_SOURCE }}
+          COINRANKING_API_KEY: ${{ secrets.COINRANKING_API_KEY }}
         run: bun run scripts/ingest.ts

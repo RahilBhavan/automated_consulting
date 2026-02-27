@@ -21,6 +21,8 @@ export function ProjectDetailPanel({ prospect, pipelineEntry }: Props) {
   } | null>(null);
   const [specLoading, setSpecLoading] = useState(false);
   const [selectedDeliverable, setSelectedDeliverable] = useState<string>("");
+  /** Provider for email/spec generation: Claude or Gemini. */
+  const [provider, setProvider] = useState<"claude" | "gemini">("claude");
 
   const fmtNum = (n: number | null | undefined) =>
     n == null ? "—" : n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(0)}K` : `$${n}`;
@@ -29,7 +31,8 @@ export function ProjectDetailPanel({ prospect, pipelineEntry }: Props) {
     setEmailLoading(true);
     setEmailDraft(null);
     try {
-      const res = await fetch("/api/claude/email-draft", {
+      const base = provider === "gemini" ? "/api/gemini" : "/api/claude";
+      const res = await fetch(`${base}/email-draft`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prospectId: prospect.id }),
@@ -48,7 +51,8 @@ export function ProjectDetailPanel({ prospect, pipelineEntry }: Props) {
     setSpecLoading(true);
     setSpecResult(null);
     try {
-      const res = await fetch("/api/claude/deliverable-spec", {
+      const base = provider === "gemini" ? "/api/gemini" : "/api/claude";
+      const res = await fetch(`${base}/deliverable-spec`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prospectId: prospect.id, deliverableId, deliverableTitle: title }),
@@ -155,6 +159,17 @@ export function ProjectDetailPanel({ prospect, pipelineEntry }: Props) {
         <p className="mb-2 text-sm text-neutral-600 dark:text-neutral-400">
           Generate a short outreach email citing this project&apos;s pain signals.
         </p>
+        <div className="mb-2 flex items-center gap-2">
+          <span className="text-sm text-neutral-500">Provider:</span>
+          <select
+            value={provider}
+            onChange={(e) => setProvider(e.target.value as "claude" | "gemini")}
+            className="rounded border border-neutral-200 bg-white px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          >
+            <option value="claude">Claude</option>
+            <option value="gemini">Gemini</option>
+          </select>
+        </div>
         <button
           type="button"
           onClick={handleGenerateEmail}

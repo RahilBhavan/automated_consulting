@@ -5,7 +5,8 @@
 
 import type { Prospect } from "@/types/prospect";
 import type { RawProspect } from "@/types/prospect";
-import { fetchMarketsRank500To2000 } from "./coingecko";
+import { fetchMarketsRank200To2000 as fetchCoingeckoRank200To2000 } from "./coingecko";
+import { fetchMarketsRank200To2000 as fetchCoinrankingRank200To2000 } from "./coinranking";
 import { fetchProtocols } from "./defillama";
 import { merge, attachGitHubForTopIds } from "./merge";
 import { computePainSignals, computeRawScore, applyTreasuryGate } from "@/lib/scoring/score";
@@ -17,25 +18,54 @@ const SCORE_JUMP_THRESHOLD = 2;
 const GITHUB_TOP_PERCENT = 0.1;
 
 export type IngestOptions = {
-  /** Limit CoinGecko pages (100 coins per page) to avoid long runs. */
+  /** Limit CoinGecko pages (100 coins per page) when using CoinGecko; ignored for Coinranking. */
   coingeckoMaxPages?: number;
   /** Max GitHub requests (for top 10% only). */
   maxGitHubRequests?: number;
 };
+
+/** Coin source: coingecko (default) or coinranking. Set via COIN_SOURCE env. */
+export function getCoinSource(): "coingecko" | "coinranking" {
+  const s = process.env.COIN_SOURCE?.toLowerCase();
+  if (s === "coinranking") return "coinranking";
+  return "coingecko";
+}
+
+/**
+ * Fetch coins rank 200–2000 from configured source (CoinGecko or Coinranking).
+ */
+async function fetchCoinsRank200To2000(options: IngestOptions): Promise<Awaited<ReturnType<typeof fetchCoingeckoRank200To2000>>> {
+  const source = getCoinSource();
+  if (source === "coinranking") {
+    return fetchCoinrankingRank200To2000();
+  }
+  const maxPages = options.coingeckoMaxPages ?? 19;
+  return fetchCoingeckoRank200To2000(maxPages);
+}
 
 /**
  * Run full pipeline and return new prospects (does not write).
  * Applies treasury gate and score threshold before calling GitHub; only top 10% get GitHub data.
  */
 export async function runIngestion(options: IngestOptions = {}): Promise<Prospect[]> {
-  const { coingeckoMaxPages = 6, maxGitHubRequests = 30 } = options;
+  const { maxGitHubRequests = 30 } = options;
+
+  const source = getCoinSource();
+  if (source === "coinranking" && !process.env.COINRANKING_API_KEY) {
+    throw new Error(
+      "COIN_SOURCE=coinranking requires COINRANKING_API_KEY to be set. Set the env var or use COIN_SOURCE=coingecko."
+    );
+  }
 
   const [defiLlama, coingecko] = await Promise.all([
     fetchProtocols(),
-    fetchMarketsRank500To2000(coingeckoMaxPages),
+    fetchCoinsRank200To2000(options),
   ]);
 
-  const rawList = await merge(defiLlama, coingecko, { attachGitHub: false });
+  const rawList = await merge(defiLlama, coingecko, {
+    attachGitHub: false,
+    coinSource: source,
+  });
 
   const preliminaryScores = rawList.map((r) => {
     const signals = computePainSignals(r);

@@ -17,6 +17,8 @@ export type MergeOptions = {
   attachGitHub?: boolean;
   /** Max GitHub requests to avoid rate limit. */
   maxGitHubRequests?: number;
+  /** Label for coin data source when a match is found (default "coingecko"). */
+  coinSource?: "coingecko" | "coinranking";
 };
 
 function slugify(s: string): string {
@@ -34,7 +36,7 @@ export async function merge(
   coingecko: CoinGeckoNormalized[],
   options: MergeOptions = {}
 ): Promise<RawProspect[]> {
-  const { attachGitHub = false, maxGitHubRequests = 20 } = options;
+  const { attachGitHub = false, maxGitHubRequests = 20, coinSource = "coingecko" } = options;
   const cgBySlug = new Map<string, CoinGeckoNormalized>();
   const cgById = new Map<string, CoinGeckoNormalized>();
   for (const c of coingecko) {
@@ -90,7 +92,7 @@ export async function merge(
       githubActivity,
       sources: [
         "defillama",
-        ...(cg ? (["coingecko"] as ProspectSource[]) : []),
+        ...(cg ? ([coinSource] as ProspectSource[]) : []),
         ...(githubActivity ? (["github"] as ProspectSource[]) : []),
       ],
       urlDefillama: p.urlDefillama,

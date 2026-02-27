@@ -6,13 +6,14 @@
     "dev": "next dev",
     "ingest": "bun run scripts/ingest.ts",
     "build": "next build",
-"start": "next start",
+    "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
+    "@google/genai": "^1.43.0",
     "@supabase/supabase-js": "^2.98.0",
     "next": "16.1.6",
     "react": "19.2.3",

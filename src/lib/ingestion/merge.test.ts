@@ -57,6 +57,18 @@ describe("merge", () => {
     expect(result[0].sources).toContain("coingecko");
   });
 
+  it("uses coinSource option when provided (e.g. coinranking)", async () => {
+    const defiLlama = [dl({ slug: "bar", geckoId: "coingecko-bar" })];
+    const coingecko = [cg({ id: "coingecko-bar", mcap: 1_000_000, volume: 100_000 })];
+    const result = await merge(defiLlama, coingecko, {
+      attachGitHub: false,
+      coinSource: "coinranking",
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].sources).toContain("coinranking");
+    expect(result[0].sources).not.toContain("coingecko");
+  });
+
   it("sets githubSlug when DeFiLlama has github[]", async () => {
     const defiLlama = [dl({ slug: "baz", github: ["org/repo"] })];
     const coingecko: CoinGeckoNormalized[] = [];

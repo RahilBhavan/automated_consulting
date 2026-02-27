@@ -2,7 +2,7 @@
  * Prospect types for CryptoProspect — discovery and pain-signal scoring.
  */
 
-export type ProspectSource = "coingecko" | "defillama" | "github";
+export type ProspectSource = "coingecko" | "coinranking" | "defillama" | "github";
 
 export type PainSignal = {
   key: string;
